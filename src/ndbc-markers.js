@@ -29,17 +29,22 @@ let markersSource = new VectorSource({
   wrapX: false,
 });
 
-let markerStyle = new Style({
-  image: new Circle({
-    radius: 5,
-    fill: new Fill({ color: '#666666' }),
-    stroke: new Stroke({ color: '#bada55', width: 1 }),
-  }),
-});
+//Create an openlayers style based on the attributes
+function markerStyleFunction(feature) {
+  let color = feature.get('color');
+  let result = new Style({
+    image: new Circle({
+      radius: 5,
+      fill: new Fill({ color: color }),
+      stroke: new Stroke({ color: '#bada55', width: 1 }),
+    }),
+  });
+  return result;
+}
 
 let markersLayer = new VectorLayer({
   source: markersSource,
-  style: markerStyle,
+  style: markerStyleFunction,
 });
 
 //add the basic OpenLayers map to the div
@@ -60,6 +65,23 @@ let map = new Map({
   }),
 });
 
+map.on('pointermove', evt => {
+  //TODO: implement tool tip
+});
+
+map.on('singleclick', evt => {
+  //TODO implement radial menu
+  /* sample from somewhere else:
+  controller.menu.show({
+    event: e.originalEvent,
+    data: function() {
+        return dataLookup[feature.properties[currRegion.regionField]];
+    },
+    hide: ['Zoom']
+});
+*/
+});
+
 //*** Zoomdata Controller and Functions ***
 // called when new data is received from server
 controller.update = data => {
@@ -69,16 +91,69 @@ controller.update = data => {
     let newPoint = new Point(
       Proj.fromLonLat([parseFloat(d.group[2]), parseFloat(d.group[1])]),
     );
-    let newFeature = new Feature({
-      station_id: d.group[0],
+    //Storing relevant values as feature properties so they are easy to retrieve during map operations
+    //assuming the first field in the group is some sort of ID for the entity the marker represents
+    //second two fields in d.group are lat, lon
+    //Get the metrics and count from d.current, have to look them up by field name and function
+    //add the color from Zoomdata as a property, making it easier to use for the styling
+    //add the original Zoomdata object in case we want to use the ZOomdata tooltip or radial menu
+    let colorFieldName = controller.dataAccessors.Color.getMetric().name;
+    let colorMetricVal = null;
+    if (colorFieldName != 'count') {
+      let colorFunc = controller.dataAccessors.Color.getMetric().func;
+      if (colorFunc != null) {
+        colorMetricVal = d.current.metrics[colorFieldName][colorFunc];
+      }
+    } else {
+      colorMetricVal = d.current.count;
+    }
+    let sizeFieldName = controller.dataAccessors.Size.getMetric().name;
+    let sizeMetricVal = null;
+    if (sizeFieldName != 'count') {
+      let sizeFunc = controller.dataAccessors.Size.getMetric().func;
+      if (sizeFunc != null) {
+        sizeMetricVal = d.current.metrics[sizeFieldName][sizeFunc];
+      }
+    } else {
+      sizeMetricVal = d.current.count;
+    }
+    let featureColor = controller.dataAccessors.Color.getColor(colorMetricVal);
+    let newFeatureProps = {
+      count: d.current.count,
       geometry: newPoint,
-    });
+      zdObj: d,
+      color: featureColor,
+    };
+    newFeatureProps[colorFieldName] = colorMetricVal;
+    newFeatureProps[sizeFieldName] = sizeMetricVal;
+    newFeatureProps[controller.dataAccessors['Group By'].getGroups()[0].name] =
+      d.group[0];
+    //TODO: use the data accessor to get the actual field name for the attribute/metric and set keys to match
+    let newFeature = new Feature(newFeatureProps);
+
     newFeatures.push(newFeature);
   });
   markersSource.addFeatures(newFeatures);
   markersSource.refresh();
   map.render();
 };
+
+controller.createAxisLabel({
+  picks: 'Color',
+  orientation: 'horizontal',
+  position: 'bottom',
+  popoverTitle: 'Color',
+});
+
+/* TODO: when we implement a size rendering add the picker back in so user can choose field.  Issue is that
+range/units is arbitrary, so we have to somehow math the metric value into a proportional sizing
+controller.createAxisLabel({
+  picks: 'Size',
+  orientation: 'horizontal',
+  position: 'bottom',
+  popoverTitle: 'Size'
+})
+*/
 
 // called when the chart widget is resized
 controller.resize = (newWidth, newHeight) => {
