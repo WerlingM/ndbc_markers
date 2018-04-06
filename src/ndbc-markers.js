@@ -23,6 +23,12 @@ chartContainer.id = mapDivId;
 chartContainer.style.width = '100%';
 chartContainer.style.height = '100%';
 chartContainer.classList.add('chart-container');
+
+let tooltipElement = document.createElement('div');
+tooltipElement.id = mapDivId + '_tooltip';
+tooltipElement.classList.add('map-tooltip');
+tooltipElement.style.display = 'none';
+chartContainer.appendChild(tooltipElement);
 controller.element.appendChild(chartContainer);
 
 let markersSource = new VectorSource({
@@ -66,10 +72,37 @@ let map = new Map({
 });
 
 map.on('pointermove', evt => {
-  //TODO: implement tool tip
+  let tooltipBoxHeight = 74;
+  let tooltipBoxWidth = 150;
+  let cursorLocation = map.getEventPixel(evt.originalEvent);
+  let feature = map.forEachFeatureAtPixel(cursorLocation, feature => {
+    return feature;
+  }); //only really care if there is one or more features
+  if (feature) {
+    console.log(cursorLocation);
+    let leftSide = cursorLocation[0] - tooltipBoxWidth / 2;
+    let top = cursorLocation[1] - tooltipBoxHeight - 10;
+    //Build the contents for the tooltip.  TODO: make it prettier, better formatting and use the human readable field names
+    let entityID = feature.get(
+      controller.dataAccessors['Group By'].getGroups()[0].name,
+    );
+    let colorMetricTitle = controller.dataAccessors.Color.getMetric().name;
+    let colorMetricVal = controller.dataAccessors.Color.format(
+      feature.get(colorMetricTitle),
+    ); //use the formatting configured in the Zoomdata source
+    let tooltipContents = `<span style="text-align:center;">${entityID}</span><br/>${colorMetricTitle}: ${colorMetricVal}`;
+
+    tooltipElement.style.cssText = `width:${tooltipBoxWidth}px;height:${tooltipBoxHeight}px;left:${leftSide}px;top:${top}px;`;
+    tooltipElement.innerHTML = tooltipContents;
+    tooltipElement.style.display = 'block';
+  } else {
+    //no feature under cursor, hide the tooltip
+    tooltipElement.style.display = 'none';
+  }
 });
 
 map.on('singleclick', evt => {
+  tooltipElement.style.display = 'none';
   //TODO implement radial menu
   /* sample from somewhere else:
   controller.menu.show({
@@ -97,6 +130,8 @@ controller.update = data => {
     //Get the metrics and count from d.current, have to look them up by field name and function
     //add the color from Zoomdata as a property, making it easier to use for the styling
     //add the original Zoomdata object in case we want to use the ZOomdata tooltip or radial menu
+    //
+    // TODO: Next, supplement the properties with the results of the secondary query
     let colorFieldName = controller.dataAccessors.Color.getMetric().name;
     let colorMetricVal = null;
     if (colorFieldName != 'count') {

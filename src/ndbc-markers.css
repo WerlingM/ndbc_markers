@@ -2,3 +2,11 @@
   font-family: 'Source Sans Pro', sans-serif;
   font-size: 12px;
 }
+
+.map-tooltip {
+  position: absolute;
+  background-color: lightgray;
+  border: solid 1px darkgray;
+  border-radius: 5px;
+  z-index: 100;
+}
