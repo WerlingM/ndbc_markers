@@ -16,7 +16,7 @@ import Point from 'ol/geom/point';
 import Feature from 'ol/feature';
 
 console.log('Start ndbc-markers custom vis');
-// create chart container
+// Set up elements to hold the map and tooltip
 const chartContainer = document.createElement('div');
 let mapDivId = 'map-' + controller.thread.UUID; //appending a value to the ID to make it unique in case multiple maps on same dashboard
 chartContainer.id = mapDivId;
@@ -31,11 +31,13 @@ tooltipElement.style.display = 'none';
 chartContainer.appendChild(tooltipElement);
 controller.element.appendChild(chartContainer);
 
+//Create the layer to hold the markers for each feature.  A layer consists of a source (which contains the data) and
+//style (which controls how the data is drawn)
 let markersSource = new VectorSource({
   wrapX: false,
 });
 
-//Create an openlayers style based on the attributes
+//The style is dynamic based on the color attribute of the feature, see controller.update for setting the color value
 function markerStyleFunction(feature) {
   let color = feature.get('color');
   let result = new Style({
@@ -53,7 +55,7 @@ let markersLayer = new VectorLayer({
   style: markerStyleFunction,
 });
 
-//add the basic OpenLayers map to the div
+//add the OpenLayers map to the div
 let tileLayer = new TileLayer({
   source: new XYZ({
     url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -71,6 +73,7 @@ let map = new Map({
   }),
 });
 
+// When the user hovers over a feature show the tooltip window
 map.on('pointermove', evt => {
   let tooltipBoxHeight = 74;
   let tooltipBoxWidth = 150;
@@ -101,7 +104,9 @@ map.on('pointermove', evt => {
   }
 });
 
+//When the user clicks show the Zoomdata radial menu.
 map.on('singleclick', evt => {
+  //Hide the tooltip so it isn't in the way of the menu
   tooltipElement.style.display = 'none';
   let feature = map.forEachFeatureAtPixel(
     map.getEventPixel(evt.originalEvent),
@@ -169,9 +174,8 @@ controller.update = data => {
     newFeatureProps[sizeFieldName] = sizeMetricVal;
     newFeatureProps[controller.dataAccessors['Group By'].getGroups()[0].name] =
       d.group[0];
-    //TODO: use the data accessor to get the actual field name for the attribute/metric and set keys to match
-    let newFeature = new Feature(newFeatureProps);
 
+    let newFeature = new Feature(newFeatureProps);
     newFeatures.push(newFeature);
   });
   markersSource.addFeatures(newFeatures);
