@@ -75,17 +75,17 @@ let map = new Map({
 
 // When the user hovers over a feature show the tooltip window
 map.on('pointermove', evt => {
-  let tooltipBoxHeight = 74;
-  let tooltipBoxWidth = 150;
+  let tooltipBoxHeight = 120;
+  let tooltipBoxWidth = 400;
   let cursorLocation = map.getEventPixel(evt.originalEvent);
   let feature = map.forEachFeatureAtPixel(cursorLocation, feature => {
     return feature;
   }); //only really care if there is one or more features
   if (feature) {
-    console.log(cursorLocation);
     let leftSide = cursorLocation[0] - tooltipBoxWidth / 2;
     let top = cursorLocation[1] - tooltipBoxHeight - 10;
-    //Build the contents for the tooltip.  TODO: make it prettier, better formatting and use the human readable field names
+    //Build the contents for the tooltip.  TODO: make it prettier, better formatting and use the human readable field names, include the function name for metric
+    //also TODO: add the Size metric once we get that implemented
     let entityID = feature.get(
       controller.dataAccessors['Group By'].getGroups()[0].name,
     );
@@ -93,8 +93,19 @@ map.on('pointermove', evt => {
     let colorMetricVal = controller.dataAccessors.Color.format(
       feature.get(colorMetricTitle),
     ); //use the formatting configured in the Zoomdata source
-    let tooltipContents = `<span style="text-align:center;">${entityID}</span><br/>${colorMetricTitle}: ${colorMetricVal}`;
-
+    let tooltipContents = `<span style="text-align:center;">${entityID}</span><table class="map-tooltip-text"><tr><td>${colorMetricTitle}</td> <td>${colorMetricVal}</td></tr>`;
+    //look up the metadata in the secondary query result
+    if (stationInfo[entityID]) {
+      console.log(stationInfo[entityID]);
+      tooltipContents += `<tr><td>Owner</td><td>${
+        stationInfo[entityID].owner
+      }</td></tr><tr><td>Name</td><td>${
+        stationInfo[entityID].name
+      }</td></tr><td>Type</td><td>${stationInfo[entityID].type}</td></tr>`;
+    } else {
+      tooltipContents += `<tr><td>Owner</td><td>unknown</td></tr><tr><td>Name</td><td>unknown</td></tr><tr><td>Type</td><td>unknown</td></tr>`;
+    }
+    tooltipContents += '</table>';
     tooltipElement.style.cssText = `width:${tooltipBoxWidth}px;height:${tooltipBoxHeight}px;left:${leftSide}px;top:${top}px;`;
     tooltipElement.innerHTML = tooltipContents;
     tooltipElement.style.display = 'block';
@@ -125,6 +136,51 @@ map.on('singleclick', evt => {
     });
   }
 });
+
+//Create a secondary query.  This query loads additional fields for each buoy from the metadata source, which is specified as
+//a variable on the chart configuration page.  This query uses a raw data query to get the data, there are no metrics we are
+//interested in aggregating
+//
+// This could be done with a fusion, but in Zoomdata 2.5 we couldn't use real time.  The drawback here is we can't filter based
+//on attribute like 'owner'.
+let stationInfo = {};
+console.log(controller.variables['Metadata Source Name']);
+let fieldNames = ['id', 'name', 'owner', 'pgm', 'type'];
+let fields = [];
+fieldNames.forEach(name => {
+  fields.push({
+    name: name,
+    limit: 5000,
+  });
+});
+fieldNames.forEach;
+controller
+  .createQuery(
+    {
+      name: controller.variables['Metadata Source Name'],
+    },
+    {
+      fields: fields,
+    },
+  )
+  .then(newQuery => {
+    console.log('secondary query created', newQuery);
+    controller.runQuery(newQuery, queryResult => {
+      console.log('metadata query result: ', queryResult);
+      queryResult.forEach(d => {
+        stationInfo[d[0]] = {
+          name: d[1],
+          owner: d[2],
+          pgm: d[3],
+          type: d[4],
+        };
+      });
+      console.log('processed station info: ', stationInfo);
+    });
+  })
+  .catch(err => {
+    console.error('Error creating query', err);
+  });
 
 //*** Zoomdata Controller and Functions ***
 // called when new data is received from server
