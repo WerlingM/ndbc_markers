@@ -103,16 +103,22 @@ map.on('pointermove', evt => {
 
 map.on('singleclick', evt => {
   tooltipElement.style.display = 'none';
-  //TODO implement radial menu
-  /* sample from somewhere else:
-  controller.menu.show({
-    event: e.originalEvent,
-    data: function() {
-        return dataLookup[feature.properties[currRegion.regionField]];
+  let feature = map.forEachFeatureAtPixel(
+    map.getEventPixel(evt.originalEvent),
+    feature => {
+      return feature;
     },
-    hide: ['Zoom']
-});
-*/
+  );
+  if (feature) {
+    controller.menu.show({
+      x: evt.originalEvent.clientX,
+      y: evt.originalEvent.clientY,
+      data: function() {
+        return feature.get('zdObj');
+      },
+      hide: ['Zoom', 'Trend'],
+    });
+  }
 });
 
 //*** Zoomdata Controller and Functions ***
