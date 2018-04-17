@@ -13,7 +13,16 @@ The existing "Map: Markers" visualization in Zoomdata uses a raw data query. Tha
 A pre-built package is in the `dist` folder of this repository.  This package is compatible with Zoomdata version 2.6.x.  Use the Zoomdata Chart CLI tool to add the package to your Zoomdata instance.  From a command prompt/terminal window go to the dist folder and enter
 `zd-chart add "NDBC Markers" ndbc_markers_zd26.zip`
 
-Log in to Zoomdata (as a user with administrator privileges) and open the 'Sources' page.  Create 2 new sources using the CSV files included in the 'sample_data' folder of this repository.  First create the station information source, which will be used for the buoy metadata.  Name the source 'NDBC Stations' and use `ndbc_stations.csv` as the source.  The second source is 'NDBC Observations' using the `ndbc_observations.csv` file; this file contains the sensor readouts for each buoy along with the coordinates.  On the last page of the source configuration:
+Log in to Zoomdata (as a user with administrator privileges) and open the 'Sources' page.
+
+First create the station information source, which will be used for the buoy metadata.  Name the source 'NDBC Stations' and use `ndbc_stations.csv` as the source.
+
+The second source is 'NDBC Observations' using the `ndbc_observations.csv` file; this file contains the sensor readouts for each buoy along with the coordinates.  
+On the "Fields" tab of the source configuration make sure to:
+* Change the field type for "lat_attr" to "Attribute"
+* Change the field type for "lon_attr" to "Attribute"
+
+On the "Charts" tab of the source configuration:
 * set the Time Attribute to "obs_time"
 * open the "Custom" tab on the charts list and select the "NDBC Markers" chart.  
 * in the chart configuration set the 3 group by fields and the two metrics for the color and shape.  
