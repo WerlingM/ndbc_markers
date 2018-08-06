@@ -1,3 +1,5 @@
+This chart has been updated to work with Zoomdata 3.3 and Zoomdata Custom Chart CLI version 4.0.  The code still works with Zoomdata 2.6.x, but the structure was updated to work in 3.3 or later.
+
 # Aggregate Markers Map
 The existing "Map: Markers" visualization in Zoomdata uses a raw data query. That query type has a couple of restrictions.  First, it is limited to the number of rows returned.  If you don't have a filter, or the filter returns a significant amount of data, not all data is displayed.  Second, the raw data query is not affected by the time settings on the dashboard.  The chart also does not change the marker symbology based on data values, nor does it allow any user interaction like tooltips or click menu.
 
