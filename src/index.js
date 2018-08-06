@@ -1,4 +1,4 @@
-import './ndbc-markers.css';
+import './index.css';
 
 import 'ol/ol.css';
 import Proj from 'ol/proj';
@@ -15,7 +15,7 @@ import Stroke from 'ol/style/stroke';
 import Point from 'ol/geom/point';
 import Feature from 'ol/feature';
 
-console.log('Start ndbc-markers custom vis');
+console.log('Start up ndbc-markers custom vis');
 // Set up elements to hold the map and tooltip
 const chartContainer = document.createElement('div');
 let mapDivId = 'map-' + controller.thread.UUID; //appending a value to the ID to make it unique in case multiple maps on same dashboard
@@ -166,7 +166,7 @@ controller
   .then(newQuery => {
     console.log('secondary query created', newQuery);
     controller.runQuery(newQuery, queryResult => {
-      console.log('metadata query result: ', queryResult);
+//      console.log('metadata query result: ', queryResult);
       queryResult.forEach(d => {
         stationInfo[d[0]] = {
           name: d[1],
@@ -185,8 +185,9 @@ controller
 //*** Zoomdata Controller and Functions ***
 // called when new data is received from server
 controller.update = data => {
+  console.log('Controller update rows:', data.length);
   let newFeatures = [];
-  data.forEach(d => {
+  data.forEach((d) => {
     //The lon/lat are strings since we had to do a multi-group by request from Zoomdata
     let newPoint = new Point(
       Proj.fromLonLat([parseFloat(d.group[2]), parseFloat(d.group[1])]),
